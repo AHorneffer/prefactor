@@ -1,0 +1,103 @@
+# MSSS Selfcal Pipeline
+#
+# works on one single field
+#
+
+##### input parameters
+! field_name               = H017+39
+! input_directory          = /work/htb00/htb001/MSSS-input-data
+
+##### pathes to the scripts etc.
+! msss_find_data_script    = /homea/htb00/htb001/prefactor-msss/bin/MSSS-find-data.py
+! fixinfo_script           = 
+! gsm_script               = 
+! MSSS_catalog_file        = 
+! calibration_parset       = 
+! awimager_executable      = /homea/htb00/htb003/lofar_jureca_2-15/bin/awimager
+
+##### performance parameters
+# run so many IO-heavy processes on each node
+! max_per_node_IO          =  4
+# run so many awimager processes on each node
+! max_imagers_per_node     =  3
+! max_imager_threads       =  12
+
+# set this to True at your own risk
+! error_tolerance          =  False
+
+pipeline.steps = []
+
+# create a mapfile with the field name, len = 1
+create_field_map.control.kind                     =  plugin
+create_field_map.control.type                     =  addListMapfile
+create_field_map.control.hosts                    =  ['localhost']
+create_field_map.control.files                    =  [ {{ field_name }} ]
+create_field_map.control.mapfile_dir              =  input.output.mapfile_dir
+create_field_map.control.filename                 =  field_name.mapfile
+
+# find all MS files for the field and do some simple computations, len = 1/many
+find_files.control.type                           =  pythonplugin
+find_files.control.executable                     =  {{ msss_find_data_script }}
+find_files.argument.field_name                    =  create_field_map.output.mapfile
+find_files.argument.input_directory               =  {{ input_directory }}
+find_files.argument.outmapname                    =  find_files.datamap
+find_files.argument.mapfile_dir                   =  input.output.mapfile_dir
+
+# make mapfiles from find_files usable by the pipeline
+find_files_maps.control.kind                      =  plugin
+find_files_maps.control.type                      =  mapfilenamesFromMapfiles
+find_files_maps.control.mapfile_groupedmap        =  find_files.output.groupedmap.mapfile
+find_files_maps.control.mapfile_single_map        =  find_files.output.single_mapfile.mapfile
+find_files_maps.control.mapfile_allfilesgroup     =  find_files.output.allfilesgroup.mapfile
+
+# fix the tile-beam info
+fix_tile_info.control.kind                        =  recipe
+fix_tile_info.control.type                        =  executable_args
+fix_tile_info.control.executable                  =  {{ fixinfo_script }}
+fix_tile_info.control.max_per_node                =  {{ max_per_node_IO }}
+fix_tile_info.control.mapfiles_in                 =  [ create_field_map.output.mapfile ]
+fix_tile_info.control.inputkeys                   =  [ msin ]
+fix_tile_info.argument.flags                      =  [ msin ]
+
+# create the skymodel for calibration, len = 1
+gen_skymodel.control.kind                         =  recipe
+gen_skymodel.control.type                         =  executable_args
+gen_skymodel.control.executable                   =  {{ gsm_script }}
+gen_skymodel.control.mapfiles_in                  =  [ create_field_map.output.mapfile ]
+gen_skymodel.control.outputkey                    =  output_file
+gen_skymodel.argument.flags                       =  [output_file, find_files.output.RA.mapfile, find_files.output.DEC.mapfile, {{ skymodel_radius }} ]
+gen_skymodel.argument.cat                         =  {{ MSSS_catalog_file }}
+
+# expand the skymodel to all files, len = nfiles
+expand_skymodel.control.kind                      =  plugin
+expand_skymodel.control.type                      =  mapfileSingleToGroup
+expand_skymodel.control.mapfile_in                =  gen_skymodel.output.mapfile
+expand_skymodel.control.mapfile_groups            =  find_files_maps.output.allfilesgroup
+expand_skymodel.control.mapfile_dir               =  input.output.mapfile_dir
+expand_skymodel.control.filename                  =  expand_skymodel.datamap
+
+# calibrate the input-data (will modify in input files), len = nfiles
+calibrate_data.control.type                       =  python-calibrate-stand-alone
+calibrate_data.control.max_per_node               =  {{ max_per_node_IO }}
+calibrate_data.control.error_tolerance            =  {{ error_tolerance }}
+calibrate_data.control.opts.mapfiles_in           =  [find_files_maps.output.single_map,expand_skymodel.output.mapfile]
+calibrate_data.control.opts.inputkeys             =  [msin,skymodel]
+calibrate_data.argument.force                     =  True
+calibrate_data.argument.observation               =  msin
+calibrate_data.argument.parmdb-name               =  instrument_directionindependent
+calibrate_data.argument.parset                    =  {{ calibration_parset }}
+calibrate_data.argument.catalog                   =  skymodel
+
+# first imaging with shallow cleaning, length = nbands
+awimage1.control.kind                             =  recipe
+awimage1.control.type                             =  executable_args
+awimage1.control.executable                       =  {{ awimager_executable }}
+awimage1.control.outputsuffixes                   =  [.model,.model.corr,.restored,.restored.corr,0.avgpb]
+awimage1.control.environment                      =  {OMP_NUM_THREADS: {{ max_imager_threads }} }
+awimage1.control.outputkey                        =  name
+awimage1.control.args_format                      =  lofar
+awimage1.control.parsetasfile                     =  True
+awimage1.control.max_per_node                     =  {{ max_imagers_per_node }}
+awimage1.control.error_tolerance                  =  {{ error_tolerance }}
+awimage1.control.mapfiles_in                      =  []
+awimage1.control.inputkeys                        =  []
