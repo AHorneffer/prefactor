@@ -25,7 +25,7 @@
 ##### pathes to the scripts etc.
 ! msss_find_data_script    = /homea/htb00/htb001/prefactor-msss/bin/MSSS-find-data.py
 ! fixinfo_script           = /homea/htb00/htb001/python-scripts/fixinfo/fixbeaminfo
-! gsm_script               = 
+! gsm_script               = /homea/htb00/htb001/prefactor-msss/bin/gsmMSSS.py
 ! MSSS_catalog_file        = 
 ! calibration_parset       = /homea/htb00/htb001/prefactor-msss/parsets/phaseonly_modeCOMPLX.parset
 ! virtual_concat_script    = /homea/htb00/htb001/prefactor-msss/bin/virtual_concat.py
