@@ -58,7 +58,7 @@ find_files.control.type                           =  pythonplugin
 find_files.control.executable                     =  {{ msss_find_data_script }}
 find_files.argument.field_name                    =  create_field_map.output.mapfile
 find_files.argument.input_directory               =  {{ input_directory }}
-find_files.argument.outmapname                    =  find_files.datamap
+find_files.argument.mapfile_basename              =  find_files.datamap
 find_files.argument.mapfile_dir                   =  input.output.mapfile_dir
 
 # make mapfiles from find_files usable by the pipeline
@@ -72,7 +72,7 @@ fix_tile_info.control.kind                        =  recipe
 fix_tile_info.control.type                        =  executable_args
 fix_tile_info.control.executable                  =  {{ fixinfo_script }}
 fix_tile_info.control.max_per_node                =  {{ max_per_node_IO }}
-fix_tile_info.control.mapfiles_in                 =  [ create_field_map.output.mapfile ]
+fix_tile_info.control.mapfiles_in                 =  [ find_files_maps.output.single_map ]
 fix_tile_info.control.inputkeys                   =  [ msin ]
 fix_tile_info.argument.flags                      =  [ msin ]
 
@@ -81,6 +81,7 @@ gen_skymodel.control.kind                         =  recipe
 gen_skymodel.control.type                         =  executable_args
 gen_skymodel.control.executable                   =  {{ gsm_script }}
 gen_skymodel.control.mapfiles_in                  =  [ create_field_map.output.mapfile ]
+gen_skymodel.control.inputkeys                    =  [ dummy ]
 gen_skymodel.control.outputkey                    =  output_file
 gen_skymodel.argument.flags                       =  [output_file, find_files.output.RA.mapfile, find_files.output.DEC.mapfile, {{ skymodel_radius }} ]
 gen_skymodel.argument.cat                         =  {{ MSSS_catalog_file }}

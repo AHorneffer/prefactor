@@ -17,7 +17,8 @@ def get_direction_deg(mspath):
     import casacore.tables as pt
     import numpy as np
     pointing_table = pt.table(mspath+'::FIELD', ack=False)
-    radec = pointing_table.getcell('PHASE_DIR',0)
+    radec = pointing_table.getcell('PHASE_DIR',0)[0]
+    print radec
     RA = radec[0]/np.pi*180.
     DEC = radec[1]/np.pi*180.
     return (RA, DEC)
@@ -46,7 +47,7 @@ def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_d
         print 'MSSS-find-data: field_name, input_directory, mapfile_basename, and mapfile_dir are needed!'
         raise ValueError('MSSS-find-data: field_name, input_directory, mapfile_basename, and mapfile_dir are needed!')
 
-    fieldpath = os.path.join(input_directory/field_name)
+    fieldpath = os.path.join(input_directory,field_name)
     grouped_map = MultiDataMap()
     file_single_map = DataMap([])
     for i in range(8):
@@ -56,7 +57,7 @@ def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_d
             grouped_map.append(MultiDataProduct('localhost', ms_files, False))
             for filename in ms_files:
                 file_single_map.append(DataProduct('localhost', filename, False))
-    if len(allfiles) < 2:
+    if len(file_single_map) < 2:
         raise ValueError('MSSS-find-data: found less than 2 inputs files for field!')
 
     (ra, dec) = get_direction_deg(file_single_map[0].file)
