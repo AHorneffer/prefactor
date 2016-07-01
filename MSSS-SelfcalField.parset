@@ -9,6 +9,7 @@
 ! results_directory        = /work/htb00/htb001/MSSS-results
 
 ##### imaging parameters
+! skymodel_radius   = 5.
 ! robust     = 0.
 ! npix       = 2048
 # uvmax in klambda
