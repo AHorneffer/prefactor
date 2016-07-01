@@ -23,7 +23,8 @@ def get_direction_deg(mspath):
     return (RA, DEC)
     
 
-def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_dir=None):
+def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_dir=None,
+         uvmin_lowdec=0.1, uvmin_highdec=0., dec_border=35.):
     """
     Find the MSs for one MSSS field
 
@@ -48,7 +49,6 @@ def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_d
     fieldpath = os.path.join(input_directory/field_name)
     grouped_map = MultiDataMap()
     file_single_map = DataMap([])
-    allfiles = []
     for i in range(8):
         band_pattern = '%s/[0-1]*/BAND%d/L*.MS' % (fieldpath,i) 
         ms_files = glob.glob(band_pattern)
@@ -56,22 +56,22 @@ def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_d
             grouped_map.append(MultiDataProduct('localhost', ms_files, False))
             for filename in ms_files:
                 file_single_map.append(DataProduct('localhost', filename, False))
-                allfiles.append(filename)
     if len(allfiles) < 2:
         raise ValueError('MSSS-find-data: found less than 2 inputs files for field!')
-    allfiles_map = MultiDataMap()
-    allfiles_map.append(MultiDataProduct('localhost', allfiles, False))
 
     (ra, dec) = get_direction_deg(file_single_map[0].file)
+
+    if dec <= dec_border:
+        uvmin = uvmin_lowdec
+    else:
+        uvmin = uvmin_highdec
 
     grouped_mapname = os.path.join(mapfile_dir, mapfile_basename+'_grouped')
     grouped_map.save(grouped_mapname)
     file_single_mapname = os.path.join(mapfile_dir, mapfile_basename+'_single')
     file_single_map.save(file_single_mapname)
-    allfiles_mapname = os.path.join(mapfile_dir, mapfile_basename+'_allfiles')
-    allfiles_map.save(allfiles_mapname)    
 
     result = {'groupedmap' : grouped_mapname, 'single_mapfile' : file_single_mapname,
-              'allfilesgroup' : allfiles_mapname,
-              'RA' : ra , 'DEC' : dec}
+              'RA' : ra , 'DEC' : dec, 'UVmin' : uvmin}
+    print "MSSS-find-data.py result:",result
     return result
