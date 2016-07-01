@@ -66,6 +66,9 @@ find_files_maps.control.kind                      =  plugin
 find_files_maps.control.type                      =  mapfilenamesFromMapfiles
 find_files_maps.control.mapfile_groupedmap        =  find_files.output.groupedmap.mapfile
 find_files_maps.control.mapfile_single_map        =  find_files.output.single_mapfile.mapfile
+find_files_maps.control.mapfile_DEC               =  find_files.output.DEC.mapfile
+find_files_maps.control.mapfile_RA                =  find_files.output.RA.mapfile
+find_files_maps.control.mapfile_UVmin             =  find_files.output.UVmin.mapfile
 
 # fix the tile-beam info
 fix_tile_info.control.kind                        =  recipe
@@ -83,7 +86,7 @@ gen_skymodel.control.executable                   =  {{ gsm_script }}
 gen_skymodel.control.mapfiles_in                  =  [ create_field_map.output.mapfile ]
 gen_skymodel.control.inputkeys                    =  [ dummy ]
 gen_skymodel.control.outputkey                    =  output_file
-gen_skymodel.argument.flags                       =  [output_file, find_files.output.RA.mapfile, find_files.output.DEC.mapfile, {{ skymodel_radius }} ]
+gen_skymodel.argument.flags                       =  [output_file, find_files_maps.output.RA, find_files_maps.output.DEC, {{ skymodel_radius }} ]
 gen_skymodel.argument.cat                         =  {{ MSSS_catalog_file }}
 
 # expand the skymodel to all files, len = nfiles
@@ -117,7 +120,7 @@ concat.argument.flags                             =  [msfiles,msconcat]
 # expand the skymodel to all files, len = nfiles
 expand_uvmin.control.kind                         =  plugin
 expand_uvmin.control.type                         =  expandMapfile
-expand_uvmin.control.mapfile_in                   =  find_files.output.UVmin.mapfile
+expand_uvmin.control.mapfile_in                   =  find_files_maps.output.UVmin
 expand_uvmin.control.mapfile_to_match             =  concat.output.mapfile
 expand_uvmin.control.mapfile_dir                  =  input.output.mapfile_dir
 expand_uvmin.control.filename                     =  expand_uvmin.datamap
