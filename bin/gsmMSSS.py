@@ -531,6 +531,7 @@ if __name__ == "__main__":
     parser.add_argument('--cat', type=str, help='Filename to read the MSSS catalogue from. By default, will use msss.xml from the location of that script.')
     parser.add_argument('-n', '--ndetections', type=int, help='Minimum number of HBA bands for which the source needs to be detected in order to include it in the sky model output. Default 5.', default=5)
     parser.add_argument('-v' ,'--verbose', action='count', help='Verbosity')
+    parser.add_argument('--dummy', type=str, help='Dummy argument that is ignored')
 
     args = parser.parse_args()
 
