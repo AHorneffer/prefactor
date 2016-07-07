@@ -102,7 +102,7 @@ expand_skymodel.control.filename                  =  expand_skymodel.datamap
 
 # calibrate the input-data (will modify in input files), len = nfiles
 calibrate_data.control.type                       =  python-calibrate-stand-alone
-calibrate_data.control.max_per_node               =  {{ max_per_node_BBS }}
+calibrate_data.control.max_per_node = 16
 calibrate_data.control.error_tolerance            =  {{ error_tolerance }}
 calibrate_data.control.opts.mapfiles_in           =  [find_files_maps.output.single_map,expand_skymodel.output.mapfile]
 calibrate_data.control.opts.inputkeys             =  [msin,skymodel]
@@ -123,7 +123,7 @@ concat.argument.flags                             =  [msfiles,msconcat]
 # expand the skymodel to all files, len = nfiles
 expand_uvmin.control.kind                         =  plugin
 expand_uvmin.control.type                         =  expandMapfile
-expand_uvmin.control.mapfile_in                   =  find_files_maps.output.UVmin
+expand_uvmin.control.mapfile_in                   =  find_files.output.UVmin.mapfile
 expand_uvmin.control.mapfile_to_match             =  concat.output.mapfile
 expand_uvmin.control.mapfile_dir                  =  input.output.mapfile_dir
 expand_uvmin.control.filename                     =  expand_uvmin.datamap
