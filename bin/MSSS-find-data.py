@@ -48,13 +48,13 @@ def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_d
         raise ValueError('MSSS-find-data: field_name, input_directory, mapfile_basename, and mapfile_dir are needed!')
 
     fieldpath = os.path.join(input_directory,field_name)
-    grouped_map = MultiDataMap()
+    grouped_map = MultiDataMap([])
     file_single_map = DataMap([])
     for i in range(8):
         band_pattern = '%s/[0-1]*/BAND%d/L*.MS' % (fieldpath,i) 
         ms_files = glob.glob(band_pattern)
         if len(ms_files) > 0:
-            grouped_map.append(MultiDataProduct('localhost', ms_files, False))
+            grouped_map.data.append(MultiDataProduct('localhost', ms_files, False))
             for filename in ms_files:
                 file_single_map.append(DataProduct('localhost', filename, False))
     if len(file_single_map) < 2:
