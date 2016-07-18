@@ -25,7 +25,7 @@ def get_direction_deg(mspath):
     
 
 def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_dir=None,
-         uvmin_lowdec=0.1, uvmin_highdec=0., dec_border=35.):
+         uvmin_lowdec=0.1, uvmin_highdec=0., dec_border=35., uvmax_klambda=666.):
     """
     Find the MSs for one MSSS field
 
@@ -73,6 +73,7 @@ def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_d
     file_single_map.save(file_single_mapname)
 
     result = {'groupedmap' : grouped_mapname, 'single_mapfile' : file_single_mapname,
-              'RA' : ra , 'DEC' : dec, 'UVmin' : uvmin}
+              'RA' : ra , 'DEC' : dec, 'UVmin' : uvmin, 
+              'UVmin_lambda' : (uvmin*1000.), 'UVmax_lambda' : (uvmax_klambda*1000.)}
     print "MSSS-find-data.py result:",result
     return result

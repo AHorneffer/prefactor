@@ -31,8 +31,9 @@
 ! MSSS_catalog_file        = /homea/htb00/htb001/MSSS-processing/mastercat_HBA_V0_nonfluxcor.xml
 ! calibration_parset       = /homea/htb00/htb001/prefactor-msss/parsets/phaseonly_modeCOMPLX.parset
 ! virtual_concat_script    = /homea/htb00/htb001/prefactor-msss/bin/virtual_concat.py
-! awimager_executable      = /homea/htb00/htb003/lofar_jureca_2-15/bin/awimager
 ! make_clean_mask_script   = /homea/htb00/htb001/prefactor-msss/bin/make_clean_mask.py
+! awimager_executable      = /homea/htb00/htb003/lofar_jureca_2-15/bin/awimager
+! addImagingInfo_script    = /homea/htb00/htb003/lofar_jureca_2-15/bin/addImagingInfo
 
 ##### performance parameters
 # run so many IO-heavy processes on each node
@@ -44,7 +45,7 @@
 # set this to True at your own risk
 ! error_tolerance          =  False
 
-pipeline.steps = [create_field_map, find_files, find_files_maps, fix_tile_info, gen_skymodel, expand_skymodel, calibrate_data, concat, expand_uvmin, awimage1]
+pipeline.steps = [create_field_map, find_files, find_files_maps, fix_tile_info, gen_skymodel, expand_skymodel, calibrate_data, concat, expand_uvmin, awimage_shallow]
 
 # create a mapfile with the field name, len = 1
 create_field_map.control.kind                     =  plugin
@@ -61,6 +62,7 @@ find_files.argument.field_name                    =  create_field_map.output.map
 find_files.argument.input_directory               =  {{ input_directory }}
 find_files.argument.mapfile_basename              =  find_files.datamap
 find_files.argument.mapfile_dir                   =  input.output.mapfile_dir
+find_files.argument.uvmax_klambda                 =  {{ uvmax }}
 
 # make mapfiles from find_files usable by the pipeline
 find_files_maps.control.kind                      =  plugin
@@ -70,6 +72,8 @@ find_files_maps.control.mapfile_single_map        =  find_files.output.single_ma
 find_files_maps.control.mapfile_DEC               =  find_files.output.DEC.mapfile
 find_files_maps.control.mapfile_RA                =  find_files.output.RA.mapfile
 find_files_maps.control.mapfile_UVmin             =  find_files.output.UVmin.mapfile
+find_files_maps.control.mapfile_UVmin_lambda      =  find_files.output.UVmin_lambda.mapfile
+find_files_maps.control.mapfile_UVmax_lambda      =  find_files.output.UVmax_lambda.mapfile
 
 # fix the tile-beam info
 fix_tile_info.control.kind                        =  recipe
@@ -98,7 +102,7 @@ expand_skymodel.control.mapfile_to_match          =  find_files_maps.output.sing
 expand_skymodel.control.mapfile_dir               =  input.output.mapfile_dir
 expand_skymodel.control.filename                  =  expand_skymodel.datamap
 
-# calibrate the input-data (will modify in input files), len = nfiles
+# calibrate the input-data (will modify the input files), len = nfiles
 calibrate_data.control.type                       =  python-calibrate-stand-alone
 calibrate_data.control.max_per_node               =  {{ max_per_node_IO }}
 calibrate_data.control.error_tolerance            =  {{ error_tolerance }}
@@ -118,7 +122,7 @@ concat.control.inputkey                           =  msfiles
 concat.control.outputkey                          =  msconcat
 concat.argument.flags                             =  [msfiles,msconcat]
 
-# expand the skymodel to all files, len = nfiles
+# expand the uvmin value to all files, len = nfiles
 expand_uvmin.control.kind                         =  plugin
 expand_uvmin.control.type                         =  expandMapfile
 expand_uvmin.control.mapfile_in                   =  find_files_maps.output.UVmin
@@ -127,44 +131,62 @@ expand_uvmin.control.mapfile_dir                  =  input.output.mapfile_dir
 expand_uvmin.control.filename                     =  expand_uvmin.datamap
 
 # first imaging with shallow cleaning, length = nbands
-awimage1.control.kind                             =  recipe
-awimage1.control.type                             =  executable_args
-awimage1.control.executable                       =  {{ awimager_executable }}
-awimage1.control.outputsuffixes                   =  [.model,.model.corr,.restored,.restored.corr,0.avgpb]
-awimage1.control.outputkey                        =  image
-awimage1.control.args_format                      =  lofar
-awimage1.control.parsetasfile                     =  True
-awimage1.control.max_per_node                     =  {{ max_imagers_per_node }}
-awimage1.control.error_tolerance                  =  {{ error_tolerance }}
-awimage1.control.mapfiles_in                      =  [concat.output.mapfile, expand_uvmin.output.mapfile]
-awimage1.control.inputkeys                        =  [msin,uvmin]
-awimage1.argument.ms                              =  msin
-awimage1.argument.numthreads                      =  {{ max_imager_threads }}
-awimage1.argument.cellsize                        =  {{ cellsize }}
-awimage1.argument.npix                            =  {{ npix }}
-awimage1.argument.niter                           =  {{ niter_sh }}
-awimage1.argument.robust                          =  {{ robust }}
-awimage1.argument.wmax                            =  {{ wmax }}
-awimage1.argument.weight                          =  briggs
-awimage1.argument.data                            =  CORRECTED_DATA
-awimage1.argument.padding                         =  {{ padding }}
-awimage1.argument.stokes                          =  I
-awimage1.argument.operation                       =  mfclark
-awimage1.argument.oversample                      =  5
-awimage1.argument.cyclefactor                     =  1.5
-awimage1.argument.gain                            =  0.1
-awimage1.argument.timewindow                      =  300
-awimage1.argument.ChanBlockSize                   =  2
-awimage1.argument.ApplyElement                    =  0
-awimage1.argument.UVmax                           =  {{ uvmax }}
-awimage1.argument.UVmin                           =  uvmin
+awimage_shallow.control.kind                      =  recipe
+awimage_shallow.control.type                      =  executable_args
+awimage_shallow.control.executable                =  {{ awimager_executable }}
+awimage_shallow.control.outputsuffixes            =  [.model,.model.corr,.restored,.restored.corr,0.avgpb]
+awimage_shallow.control.outputkey                 =  image
+awimage_shallow.control.args_format               =  lofar
+awimage_shallow.control.parsetasfile              =  True
+awimage_shallow.control.max_per_node              =  {{ max_imagers_per_node }}
+awimage_shallow.control.error_tolerance           =  {{ error_tolerance }}
+awimage_shallow.control.mapfiles_in               =  [concat.output.mapfile, expand_uvmin.output.mapfile]
+awimage_shallow.control.inputkeys                 =  [msin,uvmin]
+awimage_shallow.argument.ms                       =  msin
+awimage_shallow.argument.numthreads               =  {{ max_imager_threads }}
+awimage_shallow.argument.cellsize                 =  {{ cellsize }}
+awimage_shallow.argument.npix                     =  {{ npix }}
+awimage_shallow.argument.niter                    =  {{ niter_sh }}
+awimage_shallow.argument.robust                   =  {{ robust }}
+awimage_shallow.argument.wmax                     =  {{ wmax }}
+awimage_shallow.argument.weight                   =  briggs
+awimage_shallow.argument.data                     =  CORRECTED_DATA
+awimage_shallow.argument.padding                  =  {{ padding }}
+awimage_shallow.argument.stokes                   =  I
+awimage_shallow.argument.operation                =  mfclark
+awimage_shallow.argument.oversample               =  5
+awimage_shallow.argument.cyclefactor              =  1.5
+awimage_shallow.argument.gain                     =  0.1
+awimage_shallow.argument.timewindow               =  300
+awimage_shallow.argument.ChanBlockSize            =  2
+awimage_shallow.argument.ApplyElement             =  0
+awimage_shallow.argument.UVmax                    =  {{ uvmax }}
+awimage_shallow.argument.UVmin                    =  uvmin
 
-# make masks for the shallow images, length = nbands
+# generate a mapfile with all files in a single entry, length = 1
+combine_image_mapfile.control.kind                =  plugin
+combine_image_mapfile.control.type                =  createMapfile
+combine_image_mapfile.control.method              =  mapfile_all_to_one
+combine_image_mapfile.control.mapfile_in          =  awimage_shallow.output.restored.corr.mapfile
+combine_image_mapfile.control.mapfile_dir         =  input.output.mapfile_dir  
+combine_image_mapfile.control.filename            =  combine_image_mapfile.mapfile
+
+# stack images, length = 1
+stack_images.control.type                         =  pythonplugin
+stack_images.control.executable                   =  {{ stack_images_script }}
+stack_images.control.max_per_node                 =  {{ max_imagers_per_node }}
+stack_images.control.error_tolerance              =  {{ error_tolerance }}
+stack_images.control.mapfile_in                   =  combine_image_mapfile.output.mapfile
+stack_images.control.inputkey                     =  imagelist
+stack_images.control.outputkey                    =  mergedimage
+stack_images.argument.flags                       =  [imagelist, mergedimage]
+
+# make masks for the shallow images, length = 1
 mask.control.type                                =  pythonplugin
 mask.control.executable                          =  {{ make_clean_mask_script }}
 mask.control.max_per_node                        =  {{ max_imagers_per_node }}
 mask.control.error_tolerance                     =  {{ error_tolerance }}
-mask.control.mapfile_in                          =  
+mask.control.mapfile_in                          =  stack_images.output.mapfile
 mask.control.inputkey                            =  imagefile
 mask.control.outputkey                           =  maskfile
 mask.argument.flags                              =  [imagefile,maskfile]
@@ -173,6 +195,96 @@ mask.argument.threshpix                          =  5.0
 mask.argument.atrous_do                          =  True
 mask.argument.rmsbox                             =  (150,50)
 mask.argument.adaptive_rmsbox                    =  True
-mask.argument.img_format                         =  fits
+mask.argument.img_format                         =  casa
 mask.argument.atrous_jmax                        =  3
 mask.argument.trim_by                            =  0.1
+
+# expand the mask mapfile to all files, len = nfiles
+expand_mask.control.kind                         =  plugin
+expand_mask.control.type                         =  expandMapfile
+expand_mask.control.mapfile_in                   =  mask.output.mapfile
+expand_mask.control.mapfile_to_match             =  concat.output.mapfile
+expand_mask.control.mapfile_dir                  =  input.output.mapfile_dir
+expand_mask.control.filename                     =  expand_mask.datamap
+
+# expand the mask mapfile to all files, len = nfiles
+expand_mask.control.kind                         =  plugin
+expand_mask.control.type                         =  expandMapfile
+expand_mask.control.mapfile_in                   =  mask.output.mapfile
+expand_mask.control.mapfile_to_match             =  concat.output.mapfile
+expand_mask.control.mapfile_dir                  =  input.output.mapfile_dir
+expand_mask.control.filename                     =  expand_mask.datamap
+
+# second imaging with deep cleaning, length = nbands
+awimage_deep.control.kind                        =  recipe
+awimage_deep.control.type                        =  executable_args
+awimage_deep.control.executable                  =  {{ awimager_executable }}
+awimage_deep.control.outputsuffixes              =  [.model,.model.corr,.restored,.restored.corr,0.avgpb]
+awimage_deep.control.outputkey                   =  image
+awimage_deep.control.args_format                 =  lofar
+awimage_deep.control.parsetasfile                =  True
+awimage_deep.control.max_per_node                =  {{ max_imagers_per_node }}
+awimage_deep.control.error_tolerance             =  {{ error_tolerance }}
+awimage_deep.control.mapfiles_in                 =  [concat.output.mapfile, expand_uvmin.output.mapfile, mask.output.threshold_5sig.mapfile, expand_mask.output.mapfile]
+awimage_deep.control.inputkeys                   =  [msin,uvmin,thresh,maskfile]
+awimage_deep.argument.ms                         =  msin
+awimage_deep.argument.threshold                  =  thresh
+awimage_deep.argument.mask                       =  maskfile
+awimage_deep.argument.numthreads                 =  {{ max_imager_threads }}
+awimage_deep.argument.cellsize                   =  {{ cellsize }}
+awimage_deep.argument.npix                       =  {{ npix }}
+awimage_deep.argument.niter                      =  {{ niter_deep }}
+awimage_deep.argument.robust                     =  {{ robust }}
+awimage_deep.argument.wmax                       =  {{ wmax }}
+awimage_deep.argument.weight                     =  briggs
+awimage_deep.argument.data                       =  CORRECTED_DATA
+awimage_deep.argument.padding                    =  {{ padding }}
+awimage_deep.argument.stokes                     =  I
+awimage_deep.argument.operation                  =  mfclark
+awimage_deep.argument.oversample                 =  5
+awimage_deep.argument.cyclefactor                =  1.5
+awimage_deep.argument.gain                       =  0.1
+awimage_deep.argument.timewindow                 =  300
+awimage_deep.argument.ChanBlockSize              =  2
+awimage_deep.argument.ApplyElement               =  0
+awimage_deep.argument.UVmax                      =  {{ uvmax }}
+awimage_deep.argument.UVmin                      =  uvmin
+
+# expand the uvmin_lambda value to all files, len = nfiles
+expand_uvmin_lambda.control.kind                 =  plugin
+expand_uvmin_lambda.control.type                 =  expandMapfile
+expand_uvmin_lambda.control.mapfile_in           =  find_files_maps.output.UVmin_Lambda
+expand_uvmin_lambda.control.mapfile_to_match     =  awimage_deep.output.restored.corr.mapfile
+expand_uvmin_lambda.control.mapfile_dir          =  input.output.mapfile_dir
+expand_uvmin_lambda.control.filename             =  expand_uvmin_lambda.datamap
+
+# expand the uvmax_lambda value to all files, len = nfiles
+expand_uvmax_lambda.control.kind                 =  plugin
+expand_uvmax_lambda.control.type                 =  expandMapfile
+expand_uvmax_lambda.control.mapfile_in           =  find_files_maps.output.UVmax_Lambda
+expand_uvmax_lambda.control.mapfile_to_match     =  awimage_deep.output.restored.corr.mapfile
+expand_uvmax_lambda.control.mapfile_dir          =  input.output.mapfile_dir
+expand_uvmax_lambda.control.filename             =  expand_uvmax_lambda.datamap
+
+# add imaging information to the generated images, length = nbands
+add_imaging_info_corr.control.kind               =  recipe
+add_imaging_info_corr.control.type               =  executable_args
+add_imaging_info_corr.control.executable         =  {{ addImagingInfo_script }}
+add_imaging_info_corr.control.max_per_node       =  {{ max_imagers_per_node }}
+add_imaging_info_corr.control.error_tolerance    =  {{ error_tolerance }}
+add_imaging_info_corr.control.mapfiles_in        =  [awimage_deep.output.restored.corr.mapfile, expand_uvmin_lambda.output.mapfile, expand_uvmax_lambda.output.mapfile, find_files_maps.output.groupedmap]
+add_imaging_info_corr.control.inputkeys          =  [image, uvmin, uvmax, ms_files]
+add_imaging_info_corr.argument.flags             =  [-w, image, "", uvmin, uvmax, ms_files ]          
+
+# add imaging information to the generated images, length = nbands
+add_imaging_info_nocorr.control.kind             =  recipe
+add_imaging_info_nocorr.control.type             =  executable_args
+add_imaging_info_nocorr.control.executable       =  {{ addImagingInfo_script }}
+add_imaging_info_nocorr.control.max_per_node     =  {{ max_imagers_per_node }}
+add_imaging_info_nocorr.control.error_tolerance  =  {{ error_tolerance }}
+add_imaging_info_nocorr.control.mapfiles_in      =  [awimage_deep.output.restored.mapfile, expand_uvmin_lambda.output.mapfile, expand_uvmax_lambda.output.mapfile, find_files_maps.output.groupedmap]
+add_imaging_info_nocorr.control.inputkeys        =  [image, uvmin, uvmax, ms_files]
+add_imaging_info_nocorr.argument.flags           =  [-w, image, "", uvmin, uvmax, ms_files ]          
+
+
+
