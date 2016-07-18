@@ -7,6 +7,7 @@ import numpy as np
 from astropy.table import Table
 try:
     import pyvo
+    print("Remote database connectivity using pyvo not implemented yet.")
 except:
     print("Cannot import the pyvo module. You will need to provide a catalogue file to the gsmMSSS function to work.")
 
@@ -33,7 +34,9 @@ SECPERJULYR = float('31557600.0')
 ##### #####
 '''
  2014-09-16,    v0.1,    R. Breton,    Created
+ 2016-07-06,    v0.2,    R. Breton,    Using A0_HBA and A1_HBA rather than A0 and A1
 '''
+__version__ = 0.2
 
 
 
@@ -213,7 +216,7 @@ def gsmWriter(msssTable, outfile):
             U = ''
             V = ''
             freq = ''
-            index = t['A1']
+            index = t['A1_HBA']
             majax = msssTable.MAJAX(i, hba=True, lba=False, sfflag=[0,1])
             minax = msssTable.MINAX(i, hba=True, lba=False, sfflag=[0,1])
             pa = msssTable.PA(i, hba=True, lba=False, sfflag=[0,1])
@@ -461,9 +464,10 @@ def gsmMSSS(outfile, ra, dec, radius, cutoff=0.1, assoc=None, patchname=None, ca
     """
     if verbose:
         print("-"*80)
-        print("Running gsmMSSS at location RA:{0:.5}, DEC:{1:.5}".format(ra,dec))
-        print("  Extracting cone of size {0} degres, with flux cutoff {1} Jy".format(radius,cutoff))
-        print("  Required minimum number of band detections {}".format(ndetections))
+        print("Running gsmMSSS (version {0:.2f})".format(__version__))
+        print("  Location RA:{0:.5}, DEC:{1:.5}".format(ra,dec))
+        print("  Extracting cone of size {0} deg, with flux cutoff {1} Jy".format(radius,cutoff))
+        print("  Required minimum number of band detections {0}".format(ndetections))
         print("  Using catalogue {0}".format('*default*' if cat is None else cat))
         print("  Output to be saved in file {0}".format(outfile))
         print("")
@@ -531,6 +535,7 @@ if __name__ == "__main__":
     parser.add_argument('--cat', type=str, help='Filename to read the MSSS catalogue from. By default, will use msss.xml from the location of that script.')
     parser.add_argument('-n', '--ndetections', type=int, help='Minimum number of HBA bands for which the source needs to be detected in order to include it in the sky model output. Default 5.', default=5)
     parser.add_argument('-v' ,'--verbose', action='count', help='Verbosity')
+    parser.add_argument('--version', action='version', version='%(prog)s {0:.2f}'.format(__version__))
     parser.add_argument('--dummy', type=str, help='Dummy argument that is ignored')
 
     args = parser.parse_args()
