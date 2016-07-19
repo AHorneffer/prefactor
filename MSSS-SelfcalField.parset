@@ -48,7 +48,7 @@
 # set this to True at your own risk
 ! error_tolerance          =  False
 
-pipeline.steps = [create_field_map, find_files, find_files_maps, fix_tile_info, gen_skymodel, expand_skymodel, calibrate_data, concat, expand_uvmin, awimage_shallow]
+pipeline.steps = [create_field_map, find_files, find_files_maps, fix_tile_info, gen_skymodel, expand_skymodel, calibrate_data, concat, expand_uvmin, awimage_shallow, combine_image_mapfile, stack_images, mask, expand_mask, expand_threshold, awimage_deep, expand_uvmin_lambda, expand_uvmax_lambda, add_imaging_info_corr, add_imaging_info_nocorr]
 
 # create a mapfile with the field name, len = 1
 create_field_map.control.kind                     =  plugin
@@ -167,7 +167,7 @@ awimage_shallow.argument.UVmin                    =  uvmin
 combine_image_mapfile.control.kind                =  plugin
 combine_image_mapfile.control.type                =  createMapfile
 combine_image_mapfile.control.method              =  mapfile_all_to_one
-combine_image_mapfile.control.mapfile_in          =  awimage_shallow.output.restored.corr.mapfile
+combine_image_mapfile.control.mapfile_in          =  awimage_shallow.output.awimage_shallow.restored.corr.mapfile
 combine_image_mapfile.control.mapfile_dir         =  input.output.mapfile_dir  
 combine_image_mapfile.control.filename            =  combine_image_mapfile.mapfile
 
@@ -253,16 +253,16 @@ awimage_deep.argument.UVmin                      =  uvmin
 # expand the uvmin_lambda value to all files, len = nfiles
 expand_uvmin_lambda.control.kind                 =  plugin
 expand_uvmin_lambda.control.type                 =  expandMapfile
-expand_uvmin_lambda.control.mapfile_in           =  find_files.output.UVmin_Lambda
-expand_uvmin_lambda.control.mapfile_to_match     =  awimage_deep.output.restored.corr.mapfile
+expand_uvmin_lambda.control.mapfile_in           =  find_files.output.UVmin_lambda.mapfile
+expand_uvmin_lambda.control.mapfile_to_match     =  awimage_deep.output.awimage_deep.restored.corr.mapfile
 expand_uvmin_lambda.control.mapfile_dir          =  input.output.mapfile_dir
 expand_uvmin_lambda.control.filename             =  expand_uvmin_lambda.datamap
 
 # expand the uvmax_lambda value to all files, len = nfiles
 expand_uvmax_lambda.control.kind                 =  plugin
 expand_uvmax_lambda.control.type                 =  expandMapfile
-expand_uvmax_lambda.control.mapfile_in           =  find_files.output.UVmax_Lambda
-expand_uvmax_lambda.control.mapfile_to_match     =  awimage_deep.output.restored.corr.mapfile
+expand_uvmax_lambda.control.mapfile_in           =  find_files.output.UVmax_lambda.mapfile
+expand_uvmax_lambda.control.mapfile_to_match     =  awimage_deep.output.awimage_deep.restored.corr.mapfile
 expand_uvmax_lambda.control.mapfile_dir          =  input.output.mapfile_dir
 expand_uvmax_lambda.control.filename             =  expand_uvmax_lambda.datamap
 
@@ -270,21 +270,23 @@ expand_uvmax_lambda.control.filename             =  expand_uvmax_lambda.datamap
 add_imaging_info_corr.control.kind               =  recipe
 add_imaging_info_corr.control.type               =  executable_args
 add_imaging_info_corr.control.executable         =  {{ addImagingInfo_script }}
+add_imaging_info_corr.control.args_format        =  wsclean
 add_imaging_info_corr.control.max_per_node       =  {{ max_imagers_per_node }}
 add_imaging_info_corr.control.error_tolerance    =  {{ error_tolerance }}
-add_imaging_info_corr.control.mapfiles_in        =  [awimage_deep.output.restored.corr.mapfile, expand_uvmin_lambda.output.mapfile, expand_uvmax_lambda.output.mapfile, find_files_maps.output.groupedmap]
+add_imaging_info_corr.control.mapfiles_in        =  [awimage_deep.output.awimage_deep.restored.corr.mapfile, expand_uvmin_lambda.output.mapfile, expand_uvmax_lambda.output.mapfile, find_files_maps.output.groupedmap]
 add_imaging_info_corr.control.inputkeys          =  [image, uvmin, uvmax, ms_files]
-add_imaging_info_corr.argument.flags             =  [-w, image, "", uvmin, uvmax, ms_files ]          
+add_imaging_info_corr.argument.flags             =  [-w, image, '""', uvmin, uvmax, ms_files ]          
 
 # add imaging information to the generated images, length = nbands
 add_imaging_info_nocorr.control.kind             =  recipe
 add_imaging_info_nocorr.control.type             =  executable_args
 add_imaging_info_nocorr.control.executable       =  {{ addImagingInfo_script }}
+add_imaging_info_nocorr.control.args_format      =  wsclean
 add_imaging_info_nocorr.control.max_per_node     =  {{ max_imagers_per_node }}
 add_imaging_info_nocorr.control.error_tolerance  =  {{ error_tolerance }}
-add_imaging_info_nocorr.control.mapfiles_in      =  [awimage_deep.output.restored.mapfile, expand_uvmin_lambda.output.mapfile, expand_uvmax_lambda.output.mapfile, find_files_maps.output.groupedmap]
+add_imaging_info_nocorr.control.mapfiles_in      =  [awimage_deep.output.awimage_deep.restored.mapfile, expand_uvmin_lambda.output.mapfile, expand_uvmax_lambda.output.mapfile, find_files_maps.output.groupedmap]
 add_imaging_info_nocorr.control.inputkeys        =  [image, uvmin, uvmax, ms_files]
-add_imaging_info_nocorr.argument.flags           =  [-w, image, "", uvmin, uvmax, ms_files ]          
+add_imaging_info_nocorr.argument.flags           =  [-w, image, '""', uvmin, uvmax, ms_files ]          
 
 
 

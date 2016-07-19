@@ -74,7 +74,7 @@ def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_d
 
     result = {'groupedmap' : grouped_mapname, 'single_mapfile' : file_single_mapname,
               'RA' : ra , 'DEC' : dec, 'UVmin' : uvmin, 
-              'UVmin_lambda' : (uvmin*1000.), 'UVmax_lambda' : (uvmax_klambda*1000.)}
+              'UVmin_lambda' : (float(uvmin)*1000.), 'UVmax_lambda' : (float(uvmax_klambda)*1000.)}
     print "MSSS-find-data.py result:",result
     return result
 
