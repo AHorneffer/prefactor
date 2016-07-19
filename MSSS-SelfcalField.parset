@@ -33,13 +33,14 @@
 ! virtual_concat_script    = /homea/htb00/htb001/prefactor-msss/bin/virtual_concat.py
 ! stack_images_script      = /homea/htb00/htb001/prefactor-msss/bin/MSSS-stack-images.py
 ! make_clean_mask_script   = /homea/htb00/htb001/prefactor-msss/bin/make_clean_mask.py
+! calc_threshold_script    = /homea/htb00/htb001/prefactor-msss/bin/analyze_im_GDK_pipeline.py
 ! addImagingInfo_script    = /homea/htb00/htb001/prefactor-msss/bin/MSSS_addImagingInfo.py
 ! awimager_executable      = /homea/htb00/htb003/lofar_jureca_2-15/bin/awimager
 
 ##### performance parameters
 # run so many IO-heavy processes on each node
 ! max_per_node_IO          =  8
-# run so many BBS processes on each node
+# run so many BBS (and other single-threaded, compute heavy) processes on each node
 ! max_per_node_BBS         =  16
 # run so many awimager processes on each node
 ! max_imagers_per_node     =  3
@@ -48,7 +49,7 @@
 # set this to True at your own risk
 ! error_tolerance          =  False
 
-pipeline.steps = [create_field_map, find_files, find_files_maps, fix_tile_info, gen_skymodel, expand_skymodel, calibrate_data, concat, expand_uvmin, awimage_shallow, combine_image_mapfile, stack_images, mask, expand_mask, expand_threshold, awimage_deep, expand_uvmin_lambda, expand_uvmax_lambda, add_imaging_info_corr, add_imaging_info_nocorr]
+pipeline.steps = [create_field_map, find_files, find_files_maps, fix_tile_info, gen_skymodel, expand_skymodel, calibrate_data, concat, expand_uvmin, awimage_shallow, combine_image_mapfile, stack_images, mask, expand_mask, calc_threshold, awimage_deep, expand_uvmin_lambda, expand_uvmax_lambda, add_imaging_info_corr, add_imaging_info_nocorr]
 
 # create a mapfile with the field name, len = 1
 create_field_map.control.kind                     =  plugin
@@ -199,7 +200,7 @@ mask.argument.img_format                         =  casa
 mask.argument.atrous_jmax                        =  3
 mask.argument.trim_by                            =  0.1
 
-# expand the mask mapfile to all files, len = nfiles
+# expand the mask mapfile to all files, len = nbands
 expand_mask.control.kind                         =  plugin
 expand_mask.control.type                         =  expandMapfile
 expand_mask.control.mapfile_in                   =  mask.output.mapfile
@@ -207,13 +208,22 @@ expand_mask.control.mapfile_to_match             =  concat.output.mapfile
 expand_mask.control.mapfile_dir                  =  input.output.mapfile_dir
 expand_mask.control.filename                     =  expand_mask.datamap
 
-# expand the threshold mapfile to all files, len = nfiles
+# expand the threshold mapfile to all files, len = nbands
 expand_threshold.control.kind                    =  plugin
 expand_threshold.control.type                    =  expandMapfile
 expand_threshold.control.mapfile_in              =  mask.output.threshold_5sig.mapfile
 expand_threshold.control.mapfile_to_match        =  concat.output.mapfile
 expand_threshold.control.mapfile_dir             =  input.output.mapfile_dir
 expand_threshold.control.filename                =  expand_threshold.datamap
+
+#calculate the clean-threshold for the different bands, len = nbands
+calc_threshold.control.type                      =  pythonplugin
+calc_threshold.control.executable                =  {{ calc_threshold_script }}
+calc_threshold.control.max_per_node              =  {{ max_per_node_BBS }}
+calc_threshold.control.error_tolerance           =  {{ error_tolerance }}
+calc_threshold.control.mapfile_in                =  awimage_shallow.output.awimage_shallow.restored.corr.mapfile
+calc_threshold.control.inputkey                  =  imagefile
+calc_threshold.argument.flags                    =  [imagefile]
 
 # second imaging with deep cleaning, length = nbands
 awimage_deep.control.kind                        =  recipe
@@ -225,7 +235,7 @@ awimage_deep.control.args_format                 =  lofar
 awimage_deep.control.parsetasfile                =  True
 awimage_deep.control.max_per_node                =  {{ max_imagers_per_node }}
 awimage_deep.control.error_tolerance             =  {{ error_tolerance }}
-awimage_deep.control.mapfiles_in                 =  [concat.output.mapfile, expand_uvmin.output.mapfile, expand_threshold.output.mapfile, expand_mask.output.mapfile]
+awimage_deep.control.mapfiles_in                 =  [concat.output.mapfile, expand_uvmin.output.mapfile, calc_threshold.output.threshold_Jy.mapfile, expand_mask.output.mapfile]
 awimage_deep.control.inputkeys                   =  [msin,uvmin,thresh,maskfile]
 awimage_deep.argument.ms                         =  msin
 awimage_deep.argument.threshold                  =  thresh
