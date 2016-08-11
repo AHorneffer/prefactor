@@ -5,7 +5,9 @@
 
 ##### input parameters
 ! field_name               = H017+39
-! input_directory          = /work/htb00/htb001/MSSS-input-data
+# input path that should work on the coma cluster in Nijmegen:
+! input_directory          = /vol/astro5/lofar/msss/raw_data/*/*/
+# you'll need to adjust that:
 ! results_directory        = /work/htb00/htb001/MSSS-results
 
 ##### imaging parameters
