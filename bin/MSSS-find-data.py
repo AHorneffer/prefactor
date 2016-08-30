@@ -51,7 +51,7 @@ def main(field_name=None, input_directory=None, mapfile_basename=None, mapfile_d
     grouped_map = MultiDataMap()
     file_single_map = DataMap([])
     for i in range(8):
-        band_pattern = '%s/[0-1]*/BAND%d/L*.MS' % (fieldpath,i) 
+        band_pattern = '%s/[0-9]*/BAND%d/L*.MS' % (fieldpath,i) 
         ms_files = glob.glob(band_pattern)
         if len(ms_files) > 0:
             grouped_map.append(MultiDataProduct('localhost', ms_files, False))
